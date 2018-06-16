@@ -9,7 +9,7 @@ suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(readr))
 
-SCRIPT_VERSION = "0.9.0"
+SCRIPT_VERSION = "1.0.0"
 
 # Get arguments
 option_list = list(
