@@ -9,7 +9,7 @@ suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(readr))
 
-SCRIPT_VERSION = "0.1.1"
+SCRIPT_VERSION = "0.2.0"
 
 # Get arguments
 option_list = list(
@@ -65,29 +65,21 @@ logmsg(sprintf("largecountsjoin.r version %s starting", SCRIPT_VERSION))
 
 logmsg(sprintf("Reading %s", opt$options$firsttable))
 if ( grepl('\\.gz', opt$options$firsttable) ) {
-  ft <- fread(sprintf("pigz -dc %s", opt$options$firsttable), sep = '\t', stringsAsFactors = FALSE, header = TRUE)
+  fn <- sprintf("pigz -dc %s", opt$options$firsttable)
 } else {
-  ft <- fread(opt$options$firsttable, sep = '\t', stringsAsFactors = FALSE, header = TRUE)
+  fn <- opt$options$firsttable
 }
-
-# Set the firstkey column as key
-colnames(ft)[grep(opt$options$firstkey, colnames(ft))] <- 'key'
-ft <- ft %>% setkey(key)
+ft <- fread(fn, sep = '\t', stringsAsFactors = FALSE, header = TRUE, data.table = TRUE, key = opt$options$firstkey, fill = TRUE)
 
 logmsg(sprintf("Reading %s", opt$options$countstable))
 if ( grepl('\\.gz', opt$options$countstable) ) {
-  ct <- fread(sprintf("pigz -dc %s", opt$options$countstable), sep = '\t', stringsAsFactors = FALSE, header = TRUE)
+  cn <- sprintf("pigz -dc %s", opt$options$countstable)
 } else {
-  ct <- fread(opt$options$countstable, sep = '\t', stringsAsFactors = FALSE, header = TRUE)
+  cn <- opt$options$countstable
 }
-
-# Set the countskey column as key
-colnames(ct)[grep(opt$options$countskey, colnames(ct))] <- 'key'
-ct <- ct %>% setkey(key)
+ct <- fread(cn, sep = '\t', stringsAsFactors = FALSE, header = TRUE, data.table = TRUE, key = opt$options$countskey, fill = TRUE)
 
 # Create the joined table
 logmsg(sprintf("Writing joined table to %s", opt$options$outtable))
-jt <- ft[ct, nomatch = 0] 
-colnames(jt)[grep('key', colnames(jt))] <- opt$options$firstkey
-jt %>% write_tsv(opt$options$outtable)
+ft[ct, nomatch = 0] %>% write_tsv(opt$options$outtable)
 logmsg("Done")
