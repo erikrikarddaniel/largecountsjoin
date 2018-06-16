@@ -9,7 +9,7 @@ suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(readr))
 
-SCRIPT_VERSION = "0.2.0"
+SCRIPT_VERSION = "0.9.0"
 
 # Get arguments
 option_list = list(
@@ -29,6 +29,12 @@ option_list = list(
     '--outtable', type = 'character', help = 'Name of output tsv table. Can be gzipped.'
   ),
   make_option(
+    '--longfirstcol', type = 'integer', default = 0, help = 'Convert to long format using this as the first data column in the counts table, default %default, no conversion.'
+  ),
+  make_option(
+    '--longvalue', type = 'character', default = 'count', help = 'Convert to long format using this as the name for the value, default %default. --longfirstcol must be set > 0.'
+  ),
+  make_option(
     c("-v", "--verbose"), action="store_true", default=FALSE, 
     help="Print progress messages"
   ),
@@ -45,7 +51,7 @@ opt = parse_args(
   positional_arguments = TRUE
 )
 
-# Args for testing: opt <- list(options = list(firsttable = 'largecountsjoin.00.hmmrank.tsv', countstable = 'largecountsjoin.00.counts.tsv', firstkey = 'accno', countskey = 'gene', outtable = 'test.tsv', verbose = TRUE))
+# Args for testing: opt <- list(options = list(firsttable = 'largecountsjoin.00.hmmrank.tsv', countstable = 'largecountsjoin.00.counts.tsv', firstkey = 'accno', countskey = 'gene', outtable = 'test.tsv', longvalue = 'tpm', longfirstcol = 2, verbose = TRUE))
 
 if ( opt$options$version ) {
   write(SCRIPT_VERSION, stdout())
@@ -80,6 +86,23 @@ if ( grepl('\\.gz', opt$options$countstable) ) {
 ct <- fread(cn, sep = '\t', stringsAsFactors = FALSE, header = TRUE, data.table = TRUE, key = opt$options$countskey, fill = TRUE)
 
 # Create the joined table
-logmsg(sprintf("Writing joined table to %s", opt$options$outtable))
-ft[ct, nomatch = 0] %>% write_tsv(opt$options$outtable)
+logmsg("Joining tables")
+jt <- ft[ct, nomatch = 0]
+
+logmsg(sprintf("Converting to long format using %d as first data column and %s as value column name", opt$options$longfirstcol, opt$options$longvalue))
+if ( opt$options$longfirstcol > 0 ) {
+  jt <- (
+    jt %>% 
+      melt(
+        id.vars = colnames(jt)[1:ncol(ft) + opt$options$longfirstcol - 2], 
+        measure.vars = colnames(jt)[(ncol(ft) + opt$options$longfirstcol - 1):ncol(jt)],
+        variable.name = 'sample'
+      )
+  )[value > 0]
+  colnames(jt)[grep('value', colnames(jt))] <- opt$options$longvalue
+}
+
+logmsg(sprintf("Writing table to %s", opt$options$outtable))
+jt %>% write_tsv(opt$options$outtable)
+
 logmsg("Done")
