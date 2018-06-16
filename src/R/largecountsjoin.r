@@ -9,7 +9,7 @@ suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(readr))
 
-SCRIPT_VERSION = "0.1"
+SCRIPT_VERSION = "0.1.1"
 
 # Get arguments
 option_list = list(
@@ -65,9 +65,9 @@ logmsg(sprintf("largecountsjoin.r version %s starting", SCRIPT_VERSION))
 
 logmsg(sprintf("Reading %s", opt$options$firsttable))
 if ( grepl('\\.gz', opt$options$firsttable) ) {
-  ft <- fread(sprintf("pigz -dc %s", opt$options$firsttable), sep = '\t', stringsAsFactors = FALSE)
+  ft <- fread(sprintf("pigz -dc %s", opt$options$firsttable), sep = '\t', stringsAsFactors = FALSE, header = TRUE)
 } else {
-  ft <- fread(opt$options$firsttable, sep = '\t', stringsAsFactors = FALSE)
+  ft <- fread(opt$options$firsttable, sep = '\t', stringsAsFactors = FALSE, header = TRUE)
 }
 
 # Set the firstkey column as key
@@ -76,9 +76,9 @@ ft <- ft %>% setkey(key)
 
 logmsg(sprintf("Reading %s", opt$options$countstable))
 if ( grepl('\\.gz', opt$options$countstable) ) {
-  ct <- fread(sprintf("pigz -dc %s", opt$options$countstable), sep = '\t', stringsAsFactors = FALSE)
+  ct <- fread(sprintf("pigz -dc %s", opt$options$countstable), sep = '\t', stringsAsFactors = FALSE, header = TRUE)
 } else {
-  ct <- fread(opt$options$countstable, sep = '\t', stringsAsFactors = FALSE)
+  ct <- fread(opt$options$countstable, sep = '\t', stringsAsFactors = FALSE, header = TRUE)
 }
 
 # Set the countskey column as key
