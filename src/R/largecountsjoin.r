@@ -9,7 +9,7 @@ suppressPackageStartupMessages(library(data.table))
 suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(readr))
 
-SCRIPT_VERSION = "1.0.0"
+SCRIPT_VERSION = "1.1.0"
 
 # Get arguments
 option_list = list(
@@ -35,6 +35,10 @@ option_list = list(
     '--longvalue', type = 'character', default = 'count', help = 'Convert to long format using this as the name for the value, default %default. --longfirstcol must be set > 0.'
   ),
   make_option(
+    "--subset", action="store_true", default=FALSE, 
+    help="Only use first table to subset counts table, do not include data from first table, default %default."
+  ),
+  make_option(
     c("-v", "--verbose"), action="store_true", default=FALSE, 
     help="Print progress messages"
   ),
@@ -51,7 +55,7 @@ opt = parse_args(
   positional_arguments = TRUE
 )
 
-# Args for testing: opt <- list(options = list(firsttable = 'largecountsjoin.00.hmmrank.tsv', countstable = 'largecountsjoin.00.counts.tsv', firstkey = 'accno', countskey = 'gene', outtable = 'test.tsv', longvalue = 'tpm', longfirstcol = 2, verbose = TRUE))
+# Args for testing: opt <- list(options = list(firsttable = 'largecountsjoin.00.hmmrank.tsv', countstable = 'largecountsjoin.00.counts.tsv', firstkey = 'accno', countskey = 'gene', outtable = 'test.tsv', longvalue = 'tpm', longfirstcol = 2, subset = TRUE, verbose = TRUE))
 
 if ( opt$options$version ) {
   write(SCRIPT_VERSION, stdout())
@@ -76,6 +80,10 @@ if ( grepl('\\.gz', opt$options$firsttable) ) {
   fn <- opt$options$firsttable
 }
 ft <- fread(fn, sep = '\t', stringsAsFactors = FALSE, header = TRUE, data.table = TRUE, key = opt$options$firstkey, fill = TRUE)
+if ( opt$options$subset ) {
+  ft <- data.table(c = ft[[opt$options$firstkey]], key = 'c')
+  colnames(ft) <- c(opt$options$firstkey)
+}
 
 logmsg(sprintf("Reading %s", opt$options$countstable))
 if ( grepl('\\.gz', opt$options$countstable) ) {
